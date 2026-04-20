@@ -1,0 +1,8 @@
+# Ignore the authentication token
+.auth_token
+
+# Ignore the downloaded JSONs
+dossier_medical_reports/
+
+# Ignore patient list
+case_list.csv
