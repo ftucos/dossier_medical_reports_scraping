@@ -1,8 +1,9 @@
 # Ignore the authentication token
 .auth_token
 
-# Ignore the downloaded JSONs
+# Ignore the downloaded files
 dossier_medical_reports/
+histology_reports/
 
 # Ignore patient list
 case_list.csv

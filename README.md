@@ -1,15 +1,15 @@
 # Dossier Medical Reports Scraper
 
-This project provides a Python tool for scraping and downloading medical reports (in JSON format) for a list of patients from the Dossier app. 
+This project provides a Python tool for scraping and downloading medical reports (in JSON format) for a list of patients from the Dossier app and Downloading the pdf of exams of interest. 
 
 ## Setup
 
-First, ensure you have the required dependencies installed:
+Ensure you have the required python dependencies installed:
 ```bash
 pip install requests pandas
 ```
 
-You also must provide a CSV file named `case_list.csv` containing the list of target patient IDs. By default, the scripts look for a column named `CC`.
+You also must provide a CSV file named `case_list.csv` containing the list of target patient IDs and Exams IDs. By default, the scripts look for a column named `CC` and `EXAMID`.
 
 ## Authentication (Important)
 
@@ -45,10 +45,24 @@ curl 'http://dossier.apps.ieo.it/api/v1/medicalReports?id=CC12345678' \
 
 ## Usage
 
-Once `case_list.csv` and `.auth_token` are in place, simply run the Python scraper script. For example:
+Once `case_list.csv` and `.auth_token` are in place, the workflow is split into two steps:
+
+### Step 1: Scrape Medical Reports (JSON)
+
+Run the first script to download medical reports for the patients in `case_list.csv`:
 
 ```bash
-python scrape_dossier_medical_reports.py
+python 01-scrape_dossier_medical_reports.py
 ```
 
 The script will automatically parse the `case_list.csv` file and download the corresponding JSON reports into the designated output directory `dossier_medical_reports/`.
+
+### Step 2: Download PDF Reports
+
+To download the specific PDFs for the medical reports, ensure your `case_list.csv` file also includes an `EXAMID` column for the target exams. Run the second script:
+
+```bash
+python 02-download_pdfs.py
+```
+
+This script will parse the downloaded JSON files from Step 1, identify the correct PDF URLs matching the `EXAMID`, and save them to the `histology_reports/` directory with the naming convention `<CC>_<EXAMID>.pdf`.
