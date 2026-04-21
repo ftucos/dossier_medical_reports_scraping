@@ -38,11 +38,6 @@ def main():
         filename = os.path.basename(pdf_path)
         output_txt_path = os.path.join(OUTPUT_DIR, filename.replace(".pdf", ".txt"))
 
-        # Skip if already extracted
-        if os.path.exists(output_txt_path):
-            print(f"⏩ Skipping {filename} (already extracted)")
-            continue
-
         try:
             with pdfplumber.open(pdf_path) as pdf:
                 full_text = ""
