@@ -11,9 +11,7 @@ CSV_CC_COLUMN = "CC"          # Patient ID column name in CSV
 CSV_CODE_COLUMN = "EXAMID"    # Exam ID column name in CSV
 
 JSON_DIR = "dossier_medical_reports"
-PDF_DIR = "histology_reports"
-
-os.makedirs(PDF_DIR, exist_ok=True)
+PDF_DIR = "histology_reports/pdf"
 
 # === FUNCTIONS ===
 def load_json(path):
@@ -42,39 +40,55 @@ def download_pdf(url, output_path):
         for chunk in r.iter_content(chunk_size=8192):
             if chunk:
                 f.write(chunk)
-
-
+                
 # === MAIN ===
-df = pd.read_csv(CSV_PATH, dtype=str)
+def main():
+    os.makedirs(PDF_DIR, exist_ok=True)
+    df = pd.read_csv(CSV_PATH, dtype=str)
+    
+    success_count = 0
+    fail_count = 0
+    
+    for _, row in df.iterrows():
+        cc = str(row[CSV_CC_COLUMN]).strip()
+        exam_id = str(row[CSV_CODE_COLUMN]).strip()
 
-for _, row in df.iterrows():
-    cc = str(row[CSV_CC_COLUMN]).strip()
-    exam_id = str(row[CSV_CODE_COLUMN]).strip()
+        json_path = os.path.join(JSON_DIR, f"{cc}.json")
 
-    json_path = os.path.join(JSON_DIR, f"{cc}.json")
+        if not os.path.exists(json_path):
+            print(f"⚠️ Missing JSON for {cc}")
+            fail_count += 1
+            continue
 
-    if not os.path.exists(json_path):
-        print(f"⚠️ Missing JSON for {cc}")
-        continue
+        try:
+            entries = load_json(json_path)
+        except Exception as e:
+            print(f"❌ Error reading {cc}: {e}")
+            fail_count += 1
+            continue
 
-    try:
-        entries = load_json(json_path)
-    except Exception as e:
-        print(f"❌ Error reading {cc}: {e}")
-        continue
+        pdf_url = find_pdf_url(entries, exam_id)
 
-    pdf_url = find_pdf_url(entries, exam_id)
+        if not pdf_url:
+            print(f"⚠️ No match for {cc} / {exam_id}")
+            continue
 
-    if not pdf_url:
-        print(f"⚠️ No match for {cc} / {exam_id}")
-        continue
+        output_file = os.path.join(PDF_DIR, f"{cc}_{exam_id}.pdf")
 
-    output_file = os.path.join(PDF_DIR, f"{cc}_{exam_id}.pdf")
+        try:
+            download_pdf(pdf_url, output_file)
+            print(f"✅ Saved {cc}_{exam_id}.pdf")
+            success_count += 1
+        except Exception as e:
+            print(f"❌ Failed {cc} / {exam_id}: {e}")
+            fail_count += 1
 
-    try:
-        download_pdf(pdf_url, output_file)
-        print(f"✅ Saved {cc}_{exam_id}.pdf")
-    except Exception as e:
-        print(f"❌ Failed {cc} / {exam_id}: {e}")
+        time.sleep(0.2)
+    
+    print("\n=== Download Summary ===")
+    print(f"Total processed: {len(df)}")
+    print(f"Successful: {success_count}")
+    print(f"Failed: {fail_count}")
 
-    time.sleep(0.2)
+if __name__ == "__main__":
+    main()

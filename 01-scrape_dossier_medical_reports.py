@@ -11,51 +11,71 @@ TOKEN_FILE  = ".auth_token"  # single line: your Bearer token
 OUTPUT_DIR = "dossier_medical_reports"
 BASE_URL = "http://dossier.apps.ieo.it/api/v1/medicalReports?id="
 
-# === LOAD TOKEN ===
-if not os.path.exists(TOKEN_FILE):
-    raise FileNotFoundError(f"{TOKEN_FILE} not found")
+def load_token():
+    if not os.path.exists(TOKEN_FILE):
+        raise FileNotFoundError(f"{TOKEN_FILE} not found")
 
-with open(TOKEN_FILE, "r") as f:
-    TOKEN = f.read().strip()
+    with open(TOKEN_FILE, "r") as f:
+        TOKEN = f.read().strip()
 
-if not TOKEN:
-    raise ValueError("Token file is empty")
+    if not TOKEN:
+        raise ValueError("Token file is empty")
 
-HEADERS = {
-    "Accept": "*/*",
-    "Content-Type": "application/json",
-    "Authorization": f"Bearer {TOKEN}",
-    "User-Agent": "Mozilla/5.0",
-    "Referer": "http://dossier.apps.ieo.it/"
-}
+    return TOKEN
 
-# === SETUP ===
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+def main():
+    TOKEN = load_token()
 
-df = pd.read_csv(CSV_PATH)
+    HEADERS = {
+        "Accept": "*/*",
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {TOKEN}",
+        "User-Agent": "Mozilla/5.0",
+        "Referer": "http://dossier.apps.ieo.it/"
+    }
 
-# === LOOP ===
-for cc in df[ID_COLUMN].dropna().unique():
-    cc = cc.strip()
-    url = f"{BASE_URL}{cc}"
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    try:
-        response = requests.get(
-            url,
-            headers=HEADERS,
-            verify=False  # equivalent to --insecure
-        )
+    df = pd.read_csv(CSV_PATH)
+    unique_cc = df[ID_COLUMN].dropna().unique()
 
-        if response.status_code == 200:
-            output_path = os.path.join(OUTPUT_DIR, f"{cc}.json")
-            with open(output_path, "w") as f:
-                f.write(response.text)
+    success_count = 0
+    fail_count = 0
 
-            print(f"✅ Saved {cc}")
-        else:
-            print(f"⚠️ Failed {cc} - Status: {response.status_code}")
+    print(f"ℹ️ {len(unique_cc)} unique cases out of {len(df[ID_COLUMN].dropna())} total cases.")
 
-    except Exception as e:
-        print(f"❌ Error with {cc}: {e}")
+    for cc in unique_cc:
+        cc = cc.strip()
+        url = f"{BASE_URL}{cc}"
 
-    time.sleep(0.3)  # avoid hammering the server
+        try:
+            response = requests.get(
+                url,
+                headers=HEADERS,
+                verify=False  # equivalent to --insecure
+            )
+
+            if response.status_code == 200:
+                output_path = os.path.join(OUTPUT_DIR, f"{cc}.json")
+                with open(output_path, "w") as f:
+                    f.write(response.text)
+
+                print(f"✅ Saved {cc}")
+                success_count += 1
+            else:
+                print(f"⚠️ Failed {cc} - Status: {response.status_code}")
+                fail_count += 1
+
+        except Exception as e:
+            print(f"❌ Error with {cc}: {e}")
+            fail_count += 1
+
+        time.sleep(0.3)  # avoid hammering the server
+
+    print("\n=== Extraction Summary ===")
+    print(f"Total cases: {len(df)}")
+    print(f"Successful: {success_count}")
+    print(f"Failed: {fail_count}")
+
+if __name__ == "__main__":
+    main()
