@@ -1,12 +1,12 @@
 # Dossier Medical Reports Scraper
 
-This project provides a Python tool for scraping and downloading medical reports (in JSON format) for a list of patients from the Dossier app and Downloading the pdf of exams of interest. 
+This project provides Python tools for scraping and downloading medical reports (in JSON format) for a list of patients from the Dossier app, downloading the PDFs of exams of interest, and extracting their textual content.
 
 ## Setup
 
 Ensure you have the required python dependencies installed:
 ```bash
-pip install requests pandas
+pip install requests pandas pdfplumber
 ```
 
 You also must provide a CSV file named `case_list.csv` containing the list of target patient IDs and Exams IDs. By default, the scripts look for a column named `CC` and `EXAMID`.
@@ -65,4 +65,14 @@ To download the specific PDFs for the medical reports, ensure your `case_list.cs
 python 02-download_pdfs.py
 ```
 
-This script will parse the downloaded JSON files from Step 1, identify the correct PDF URLs matching the `EXAMID`, and save them to the `histology_reports/` directory with the naming convention `<CC>_<EXAMID>.pdf`.
+This script will parse the downloaded JSON files from Step 1, identify the correct PDF URLs matching the `EXAMID`, and save them to the `histology_reports/pdf/` directory with the naming convention `<CC>_<EXAMID>.pdf`.
+
+### Step 3: Extract Text from PDFs
+
+Use the third script to extract the text content from all the downloaded histology PDFs using `pdfplumber`:
+
+```bash
+python 03-extract_text.py
+```
+
+This script will read all `.pdf` files from the `histology_reports/pdf/` directory, parse and extract the text from each page, and save the resulting string as a `.txt` file inside the `histology_reports/text/` directory.
