@@ -7,6 +7,13 @@ import pdfplumber
 INPUT_DIR = "histology_reports/pdf"
 OUTPUT_DIR = "histology_reports/text"
 
+def remove_watermark(page):
+    filtered_chars = [
+        ch for ch in page.chars
+        if ch["size"] <= 60
+    ]
+    return filtered_chars
+
 def main():
     if not os.path.exists(INPUT_DIR):
         print(f"❌ Input directory '{INPUT_DIR}' does not exist.")
@@ -40,7 +47,10 @@ def main():
             with pdfplumber.open(pdf_path) as pdf:
                 full_text = ""
                 for page in pdf.pages:
-                    text = page.extract_text()
+                    #text = page.extract_text()
+                    filtered_chars = remove_watermark(page)
+                    text = pdfplumber.utils.extract_text(filtered_chars)
+
                     if text:
                         full_text += text + "\n"
             
