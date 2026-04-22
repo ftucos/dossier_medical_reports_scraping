@@ -5,10 +5,7 @@ Your task is to extract structured data from Italian histopathology reports (pla
 The report may contain multiple labeled specimens (A, B, C, ..., possibly with skipped letters).
 
 IMPORTANT OUTPUT INSTRUCTION:
-- You must return ONLY a JSON object matching the provided schema.
-- Do not return markdown, prose, comments, or extra keys.
-- The top-level object must contain one field only: "specimens".
-- "specimens" must be a list of specimen objects.
+- You must return ONLY a JSON object matching the provided schema `ReportExtraction.model_json_schema()`.
 
 For each specimen object, fill these fields:
 - Label
@@ -21,28 +18,28 @@ For each specimen object, fill these fields:
 RULES:
 
 1. IDENTIFY SPECIMENS
-- Extract all specimen labels (A, B, C, … possibly with skipped letters).
-- These are defined in the sections such as "Materiale inviato", "Materiale ricevuto", and/or "Descrizione macroscopica".
+- Extract all specimen labels (A, B, C, … be aware that some letters might be skipped) and print it in the `Label` field.
+- Specimen labels are defined usually in one or both of those sections of the report: "Materiale inviato/ricevuto", "Descrizione macroscopica".
 - Sometimes "Materiale inviato/ricevuto" is generic and individual specimens appear only in "Descrizione macroscopica".
-- If no specimen letters are explicitly identifiable, create a single record with Label set to "".
+- If no specimen letters are explicitly identifiable across the document, create a single record with Label set to "".
 
 2. SPECIMEN DESCRIPTION
-- For each specimen, provide a short summary (ideally <=10 words) by combining information from "Materiale inviato/ricevuto" and "Descrizione macroscopica".
+- For each specimen, provide a short summary (ideally <=10 words) in `Specimen_description` field by combining information from "Materiale inviato/ricevuto" and "Descrizione macroscopica".
 - It should state both tissue/site and specimen type.
 - Examples:
-  - "vescica: biopsia lesione"
-  - "uretere: margine"
-  - "prostata: biopsia zona periferica dx"
-  - "vescica: base impianto lesione"
-  - "vescica: neoformazione parete destra"
+  - "vescica, biopsia lesione"
+  - "uretere, margine"
+  - "prostata, biopsia zona periferica dx"
+  - "vescica, base impianto lesione"
+  - "vescica, neoformazione parete destra"
 
 3. DIAGNOSIS MAPPING
 - Map each specimen letter to the corresponding diagnosis using the "Diagnosi istopatologica" section.
-- Letters may be grouped, for example: "C,E,G,H,M-P,R".
+- Diagnosis may be grouped fro multiple specimens, for example: "C,E,G,H,M-P,R".
 - Expand ranges correctly: "M-P" means M,N,O,P.
 
 4. DIAGNOSIS SUMMARY
-- Provide a short normalized diagnosis.
+- Provide a short normalized diagnosis in the `Diagnosis` field.
 - Examples:
   - Prostate cancer -> "Adenocarcinoma prostata Gleason X"
   - Benign -> "Benigno"
@@ -51,12 +48,12 @@ RULES:
   - Other lesions -> indicate lesion type succinctly
 
 5. BLADDER TUMOR FLAG
-- Set Bladder_tumor = true only if the specimen contains a bladder-cancer lesion.
+- Set `Bladder_tumor` = true only if the specimen contains a bladder-cancer lesion.
 - Typical clues: "vescica", "uroteliale", "TURB", "neoformazione vescicale".
 - Non-bladder specimens must be false.
 
 6. STAGING (ONLY if Bladder_tumor == true)
-Infer stage from the diagnosis text:
+Infer stage from the diagnosis text and place it in the `Stage` field:
 - "neoplasia uroteliale papillare a incerto potenziale di malignità" -> "PUNLMP"
 - "papillare non invasivo" -> "pTa"
 - "Carcinoma uroteliale papillare di basso grado. Non evidenza di infiltrazione del connettivo sottoepiteliale." -> "pTa"
@@ -68,24 +65,23 @@ Infer stage from the diagnosis text:
 - Combined lesions are allowed, e.g. low-grade papillary lesion with associated CIS -> "pTa + CIS"
 
 7. GRADING (ONLY if Bladder_tumor == true)
-Map:
+Mapping rule for the `Grade` field:
 - "alto grado", "high grade", "HG" -> "High"
 - "basso grado", "low grade", "LG" -> "Low"
 - If expressed as "G1/G2/G3", keep that exact form, e.g. "G2"
 - If both papillary lesion and CIS are present, report the papillary lesion grade
-- If grade is absent, use null
+- If grade is absent, use None
 
 8. MISSING DATA / NULLS
 - Do not hallucinate missing information.
-- If a field is unknown or not applicable, use null for Stage and Grade.
+- If a field is unknown or not applicable, use None for Stage and Grade.
 - For text fields Label, Specimen_description, Diagnosis, use an empty string only when truly unavailable.
-- If Bladder_tumor is false, Stage and Grade must be null.
+- If Bladder_tumor is false, Stage and Grade must be None.
 
 9. GENERAL BEHAVIOR
-- One object per specimen.
 - Do not add explanations.
-- Do not echo the report.
 - Do not invent specimen letters.
 - Keep diagnosis summaries concise and normalized.
+- Respect provided schema
 
 REPORT_TEXT starts below.
