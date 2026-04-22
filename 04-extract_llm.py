@@ -3,14 +3,14 @@ import os
 import glob
 import json
 import pandas as pd
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator, model_validator
 from ollama import Client
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # === CONFIG ===
 INPUT_DIR      = "histology_reports/text"
 OUTPUT_CSV     = "llm_extracted_data-medgemma_27b.csv"
-FAILED_LOG     = "llm_failed_requests.jsonl"
+FAILED_LOG     = "llm_failed_requests-medgemma_27b.jsonl"
 PROMPT_FILE    = "LLM_prompt.md"
 OLLAMA_MODEL   = "medgemma:27b"   # qwen3.5:latest | qwen3.5:122b
 THINK          = False               # whether to use streaming response for better performance on large outputs
@@ -29,6 +29,22 @@ class SpecimenRecord(BaseModel):
     Stage: str | None = None
     Grade: str | None = None
 
+    @field_validator("Specimen_description", "Diagnosis")
+    @classmethod
+    def validate_text_length(cls, value):
+        if len(value.strip()) <= 3:
+            raise ValueError("must be longer than 3 characters")
+        return value
+
+    @model_validator(mode="after")
+    def validate_bladder_fields(self):
+        if self.Bladder_tumor:
+            if self.Stage is None:
+                raise ValueError("Stage must not be null when Bladder_tumor is true")
+            if self.Grade is None:
+                raise ValueError("Grade must not be null when Bladder_tumor is true")
+        return self
+
 # The overall response schema from each report, which contains one or more specimens.
 class ReportExtraction(BaseModel):
     specimens: list[SpecimenRecord]
@@ -38,6 +54,24 @@ client = Client(host=OLLAMA_HOST)
 
 
 # === CORE PROCESSING ===
+def build_messages(base_prompt, report_text, failure_reason=None):
+
+    if failure_reason:
+        message_content = f"""Your previous answer failed validation.\n
+        Validation error: {failure_reason}\n
+        Retry now respeeecting the JSON schema provided.\n
+        REPORT_TEXT:\n{report_text}
+        """
+    else:
+        message_content = f"REPORT_TEXT:\n{report_text}"   
+
+    messages = [
+        {"role": "system", "content": base_prompt},
+        {"role": "user", "content": message_content},
+    ]
+
+    return messages
+
 def process_file(txt_path, base_prompt):
     """Process a single report file. Returns (filename, df | None, error | None)."""
     filename = os.path.basename(txt_path)
@@ -45,23 +79,35 @@ def process_file(txt_path, base_prompt):
     with open(txt_path, "r", encoding="utf-8") as f:
         report_text = f.read()
 
-    prompt = base_prompt + "\n" + report_text
-
     try:
-        response = client.generate(
-            model=OLLAMA_MODEL,
-            prompt=prompt,
-            format=ReportExtraction.model_json_schema(),
-            stream=False,  # disable real-time partial output
-            think=THINK,    # use streaming response for better performance on large outputs
-            options={
-                "num_predict": 8192,  # max outpout token
-                "temperature": 0,     # deterministic output
-                "num_ctx": 8192,      # max context window
-            },
-        )
+        failure_reason = None
+        raw_response = ""
 
-        extraction = ReportExtraction.model_validate_json(response.response)
+        for attempt in range(2):
+            response = client.chat(
+                model=OLLAMA_MODEL,
+                messages=build_messages(base_prompt, report_text, failure_reason),
+                format=ReportExtraction.model_json_schema(),
+                stream=False,
+                think=THINK,
+                options={
+                    "num_predict": 4096,
+                    "temperature": 0,
+                    "num_ctx": 16384,
+                },
+            )
+
+            raw_response = response.message.content
+
+            try:
+                extraction = ReportExtraction.model_validate_json(raw_response)
+                break
+            except Exception as e:
+                failure_reason = str(e)
+                if attempt == 1:
+                    return filename, None, f"{failure_reason} | raw_response={raw_response}"
+        else:
+            return filename, None, "LLM extraction failed without a parsed response"
 
         rows = []
         for s in extraction.specimens:

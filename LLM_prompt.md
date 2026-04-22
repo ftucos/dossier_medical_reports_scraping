@@ -106,8 +106,3 @@ Map `Grade` from diagnosis text:
 - `Stage` and `Grade`: use `None` when unknown, not applicable, or when `Bladder_tumor == false`.
 - `Label`, `Specimen_description`, `Diagnosis`: use empty string `""` only when truly unavailable.
 - If `Bladder_tumor == false`, **both** `Stage` and `Grade` must be `None`.
-
----
-
-REPORT_TEXT starts below.
-------------------
