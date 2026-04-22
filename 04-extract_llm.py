@@ -92,7 +92,8 @@ def process_file(txt_path, base_prompt):
                 think=THINK,
                 options={
                     "num_predict": 4096,
-                    "temperature": 0,
+                    "temperature": 0.1, # default 0.7
+                    "repeat_penalty": 1.4, # default 1.1
                     "num_ctx": 16384,
                 },
             )
