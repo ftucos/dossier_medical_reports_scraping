@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=llm_extract
-#SBATCH --output=llm_extract_%j.log
-#SBATCH --error=llm_extract_%j.err
+#SBATCH --output=logs/llm_extract_%j.log
+#SBATCH --error=logs/llm_extract_%j.err
 #SBATCH --time=08:00:00
 #SBATCH --nodelist=gpu01     # must match the node where the ollama server is running
 #SBATCH --gres=gpu:1

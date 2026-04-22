@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=ollama_server
-#SBATCH --output=ollama_server_%j.log
-#SBATCH --error=ollama_server_%j.err
+#SBATCH --output=logs/ollama_server_%j.log
+#SBATCH --error=logs/ollama_server_%j.err
 #SBATCH --time=08:00:00
 #SBATCH --gres=gpu:1          # Request 1 GPU
 #SBATCH --mem=40G             # Request 40GB RAM
