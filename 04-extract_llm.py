@@ -9,12 +9,12 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # === CONFIG ===
 INPUT_DIR      = "histology_reports/text"
-OUTPUT_CSV     = "llm_extracted_data.csv"
+OUTPUT_CSV     = "llm_extracted_data-medgemma_27b.csv"
 FAILED_LOG     = "llm_failed_requests.jsonl"
-PROMPT_FILE    = "LLM_prompt.txt"
-OLLAMA_MODEL   = "qwen3.5:latest"   # qwen3.5:latest | qwen3.5:122b
+PROMPT_FILE    = "LLM_prompt.md"
+OLLAMA_MODEL   = "medgemma:27b"   # qwen3.5:latest | qwen3.5:122b
 THINK          = False               # whether to use streaming response for better performance on large outputs
-MAX_CONCURRENT = 4                    # number of parallel requests
+MAX_CONCURRENT = 2                    # number of parallel requests
 OLLAMA_HOST    = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434") # revert to default ollama host if env var not set
 
 
@@ -55,7 +55,7 @@ def process_file(txt_path, base_prompt):
             stream=False,  # disable real-time partial output
             think=THINK,    # use streaming response for better performance on large outputs
             options={
-                "num_predict": 4096,  # max outpout token
+                "num_predict": 8192,  # max outpout token
                 "temperature": 0,     # deterministic output
                 "num_ctx": 8192,      # max context window
             },
