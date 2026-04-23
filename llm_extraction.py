@@ -146,6 +146,21 @@ def extraction_to_dataframe(extraction, filename):
     return pd.DataFrame(rows)
 
 
+def empty_result_dataframe(filename):
+    """Return a single empty output row for reports that failed extraction."""
+    return pd.DataFrame([
+        {
+            "Source_File": filename,
+            "Label": "FAILED LLM EXTRACTION",
+            "Specimen_description": "",
+            "Diagnosis": "",
+            "Bladder_tumor": "",
+            "Stage": "",
+            "Grade": "",
+        }
+    ])
+
+
 def process_file(txt_path, base_prompt):
     """Process a single report file. Returns (filename, df | None, error | None)."""
     filename = os.path.basename(txt_path)
@@ -202,11 +217,19 @@ def main():
 
         for future in as_completed(futures):
             filename, df, error = future.result()
+            # Only write header if output file doesn't exist yet (first write)
+            write_header = not os.path.exists(OUTPUT_CSV)
 
             if error:
                 print(f"❌ {filename}: {error}")
                 with open(FAILED_LOG, "a", encoding="utf-8") as flog:
                     flog.write(json.dumps({"file": filename, "error": error}, ensure_ascii=False) + "\n")
+                empty_result_dataframe(filename).to_csv(
+                    OUTPUT_CSV,
+                    mode="a",
+                    index=False,
+                    header=write_header,
+                )
                 fail_count += 1
                 continue
 
@@ -214,10 +237,15 @@ def main():
                 print(f"⚠️  {filename}: model returned no specimens.")
                 with open(FAILED_LOG, "a", encoding="utf-8") as flog:
                     flog.write(json.dumps({"file": filename, "error": "model returned no specimens"}, ensure_ascii=False) + "\n")
+                empty_result_dataframe(filename).to_csv(
+                    OUTPUT_CSV,
+                    mode="a",
+                    index=False,
+                    header=write_header,
+                )
                 fail_count += 1
                 continue
 
-            write_header = not os.path.exists(OUTPUT_CSV)
             df.to_csv(OUTPUT_CSV, mode="a", index=False, header=write_header)
             print(f"✅ {filename} ({len(df)} specimen(s))")
             success_count += 1
