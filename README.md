@@ -79,51 +79,19 @@ This script will read all `.pdf` files from the `histology_reports/pdf/` directo
 
 ### Step 4: Extract Structured Data with the LLM
 
-The fourth script, `04-extract_llm.py`, sends each extracted report text to a local Ollama server and writes the structured output to a CSV file. In this project, this step is designed to run on an HPC with a GPU through two dedicated Slurm scripts:
+The fourth step sends each extracted report text to a local Ollama server and writes the structured output to a CSV file. The `04-llm_extraction.sbatch` script submits a Slurm job to a gpu node that starts the Ollama server in background and runs the extraction script `llm_extraction.py` in the same batch job.
 
-- `04a-start_ollama_server.sbatch`
-- `04b-llm_extraction.sbatch`
-
-The execution model is intentionally two-stage:
-
-1. Submit `04a-start_ollama_server.sbatch` to start `ollama serve` on a GPU node.
-2. Wait for the job to start, then identify the exact node assigned to that Ollama server job.
-3. Edit `04b-llm_extraction.sbatch` so that `#SBATCH --nodelist=...` matches that same node.
-4. Submit `04b-llm_extraction.sbatch` so that `04b-llm_extraction.py` runs on the same host and can reach the local Ollama endpoint.
-
-This same-node requirement is important because both scripts are configured to use:
+Submit the job with:
 
 ```bash
-export OLLAMA_HOST=127.0.0.1:11437
+sbatch 04-llm_extraction.sbatch
 ```
 
-That address only works if the extraction job is scheduled onto the very same node where the Ollama server is running.
+By default, `llm_extraction.py`:
 
-Submit the server first:
-
-```bash
-sbatch 04a-start_ollama_server.sbatch
-```
-
-Check where it landed:
-
-```bash
-squeue -u $USER
-```
-
-Once the Ollama server job is running, note the assigned node name and update `04-submit_llm_job.sbatch` accordingly. For example:
-
-```bash
-#SBATCH --nodelist=gpu01
-```
-
-Then submit the extraction job:
-
-```bash
-sbatch 04b-llm_extraction.sbatch
-```
-
-What the two Slurm scripts currently do:
-
-- `04a-start_ollama_server.sbatch` requests `1` GPU, loads `CUDA/12.6.0`, sets the local Ollama binary path, points `OLLAMA_MODELS` to the shared model directory, disables cloud features with `OLLAMA_NO_CLOUD=1`, binds Ollama to `127.0.0.1:11437`, and runs `ollama serve`.
-- `04a-start_ollama_server.sbatch` requests a GPU job on a specific `--nodelist`, reuses the same Ollama environment variables, activates the `ollama` mamba environment, and runs `python3 04-extract_llm.py`.
+- reads `.txt` files from `histology_reports/text/`
+- loads the extraction prompt from `LLM_prompt.md`
+- queries the Ollama model `medgemma:27b`
+- writes successful structured outputs to `llm_extracted_data-medgemma_27b.csv`
+- appends failed cases to `llm_failed_requests-medgemma_27b.jsonl`
+- supports resume behavior by skipping files already present in the output CSV

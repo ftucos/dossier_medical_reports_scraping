@@ -15,7 +15,7 @@ OUTPUT_CSV     = f"llm_extracted_data-{OLLAMA_MODEL.replace(':', '_')}.csv"
 FAILED_LOG     = f"llm_failed_requests-{OLLAMA_MODEL.replace(':', '_')}.jsonl"
 PROMPT_FILE    = "LLM_prompt.md"
 THINK          = False               # whether to use streaming response for better performance on large outputs
-MAX_CONCURRENT = 2                    # number of parallel requests
+MAX_CONCURRENT = 4                   # number of parallel requests
 OLLAMA_HOST    = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434") # revert to default ollama host if env var not set
 
 
@@ -49,7 +49,7 @@ class SpecimenRecord(BaseModel):
         description=f"Mandatory bladder tumor stage.",
     )
     Grade: Literal["Low", "High", "High and Low", "G1",
-                   "G2", "G3", "G4", "G1/2", "G2/3",
+                   "G2", "G3", "G4", "G1/2", "G2/3", "G1/G2", "G2/G3",
                    "Undefined", "Not Applicable"] = Field(
         ...,
         description=f"Mandatory bladder tumor grade.",
