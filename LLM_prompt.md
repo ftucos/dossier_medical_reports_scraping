@@ -57,6 +57,8 @@ Set `Bladder_tumor = true` **only** if the specimen contains a **bladder cancer 
 - **True clues**: `"vescica"`, `"uroteliale"`, `"TURB"`, `"neoformazione vescicale"`
 - **False**: benign bladder tissue, inflammation, negative margins, all non-bladder specimens
 
+> ⚠️ **`"Iperplasia uroteliale"`** is a benign alteration of the bladder therefore `Bladder_tumor = false`
+
 ---
 
 ### 5. Stage *(only when `Bladder_tumor = true`)*
