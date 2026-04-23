@@ -1,12 +1,19 @@
-# Ignore the authentication token
+# patient list
+case_list.csv
+
+# llm_extracted_data output csv
+llm_extracted_data*.csv
+
+# authentication token
 .auth_token
 
-# Ignore the downloaded files
+# downloaded files
 dossier_medical_reports/
 histology_reports/
 
-# Ignore patient list
-case_list.csv
+# logs
+logs/
+
 
 # python cache
 __pycache__
