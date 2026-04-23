@@ -96,24 +96,51 @@ By default, `llm_extraction.py`:
 - appends failed cases to `llm_failed_requests-medgemma_27b.jsonl`
 - supports resume behavior by skipping files already present in the output CSV
 
-#### Troubleshooting LLM output
+### Troubleshooting LLM output
 
-The extraction script exposes a few important generation settings in `llm_extraction.py`:
+#### Generation Settings
 
-- `THINK`: enables thinking mode
-- `MAX_OUT_TOKEN`: maximum number of generated output tokens
-- `repeat_penalty`: repetition control, currently set to `1.5`
+`llm_extraction.py` exposes three key settings that control LLM output behavior:
 
-Thinking models usually require more output tokens, so if you enable `THINK = True`, you may also need to increase `MAX_OUT_TOKEN`.
+| Setting          | Description                               | Default |
+| ---------------- | ----------------------------------------- | ------- |
+| `THINK`          | Enables thinking mode                     | `False` |
+| `MAX_OUT_TOKEN`  | Maximum number of generated output tokens | 4096    |
+| `repeat_penalty` | Repetition control                        | `1.5`   |
 
-If you see an error like:
+> **Note:** Thinking models require more output tokens. If you set `THINK = True`, increase `MAX_OUT_TOKEN` accordingly.
 
-```text
-Validation failed after 2 attempts: 1 validation error for ReportExtraction
-  Invalid JSON: EOF while parsing a value
+#### Common Errors & Solutions
+
+##### 1. EOF while parsing
+
+> **Error Message:** `Validation failed after 2 attempts: Invalid JSON: EOF while parsing a value`
+
+This occurs when the model provides an incomplete or malformed JSON response. There are two primary root causes:
+
+- **Cause A: Output Token Exhaustion**
+  - **Symptoms:** The `raw_response` in `llm_failed_requests-{model}.jsonl` is empty or ends abruptly before the JSON object is closed.
+  - **Fix:** Increase the `MAX_OUT_TOKEN` value.
+- **Cause B: Model Stuttering (Repetition Loop)**
+  - **Symptoms:** The `raw_response` shows the model repeating the same phrase indefinitely (e.g., `"High grade. High grade. High grade..."`). This fills the buffer without completing the JSON.
+  - **Fix:** Increase the `repeat_penalty`. **Caution:** Values significantly higher than `1.5` may lead to degraded or nonsensical output.
+
+##### 2. Runner Initialization Failures
+
+> **Error Message:** `timed out waiting for llama runner to start`
+
+This is typically caused by memory mapping issues on specific HPC (High-Performance Computing) configurations.
+
+- **Fix:** Disable memory mapping by updating the `options` dictionary in the `llm_extraction.py` script:
+
+Python
+
+```python
+response = client.chat(
+    # ... other parameters
+    options={
+        "use_mmap": False,
+        # ... other options
+    }
+)
 ```
-
-the most common causes are:
-
-- **the model ran out of output tokens before finishing the JSON response**. You can usually confirm it in `llm_failed_requests-{model}.jsonl`. You will usually see under `raw_response`. either no output at all, or a partial but otherwise correct-looking JSON object that stops before completion. In which case **increasing `MAX_OUT_TOKEN` musually helps**.
-- **the model started stuttering** and repeating the same text multiple times, which can also prevent valid JSON completion. You can usually confirm it by the presence of repeated text patterns such as `High grade. High grade. High grade....`  under `raw_response`. In the stuttering case, **increasing `repeat_penalty` may help**. Be careful though, people often warn against pushing `repeat_penalty` much above `1.5`, because too high a value can hurt output quality.
