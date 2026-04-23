@@ -13,16 +13,86 @@ Return ONLY a valid JSON object matching the schema below. No explanations, no e
 The `specimens` list must contain exactly one record per identified specimen.
 
 ```python
-class ReportExtraction(BaseModel):
-    specimens: list[SpecimenRecord]
-
-class SpecimenRecord(BaseModel):
-    Label: str | None
-    Specimen_description: str
-    Diagnosis: str
-    Bladder_tumor: bool
-    Stage: str | None
-    Grade: str | None
+{
+   "$defs":{
+      "SpecimenRecord":{
+         "properties":{
+            "Label":{
+               "description":"Specimen label.",
+               "enum":[
+                  "NA","A","B","C","D","E","F",
+                  "G","H","I","J","K","L","M",
+                  "N","O","P","Q","R","S","T",
+                  "U","V","W","X","Y","Z"
+               ],
+               "title":"Label",
+               "type":"string"
+            },
+            "Specimen_description":{
+               "description":"Mandatory concise description of the submitted specimen. Never empty.",
+               "minLength":4,
+               "title":"Specimen Description",
+               "type":"string"
+            },
+            "Diagnosis":{
+               "description":"Mandatory normalized diagnosis in Italian. Never empty.",
+               "minLength":4,
+               "title":"Diagnosis",
+               "type":"string"
+            },
+            "Bladder_tumor":{
+               "description":"true if this specimen is a bladder tumor lesion, otherwise false.",
+               "title":"Bladder Tumor",
+               "type":"boolean"
+            },
+            "Stage":{
+               "description":"Mandatory bladder tumor stage.",
+               "enum":[
+                  "PUNLMP","pTa","pT1","CIS","displasia","pT2",
+                  "pTa + CIS","pT1 + CIS","pT2 + CIS",
+                  "Undefined","Not Applicable"
+               ],
+               "title":"Stage",
+               "type":"string"
+            },
+            "Grade":{
+               "description":"Mandatory bladder tumor grade.",
+               "enum":[
+                  "Low","High","High and Low",
+                  "G1","G2","G3","G4","G1/2","G2/3",
+                  "Undefined","Not Applicable"
+               ],
+               "title":"Grade",
+               "type":"string"
+            }
+         },
+         "required":[
+            "Label",
+            "Specimen_description",
+            "Diagnosis",
+            "Bladder_tumor",
+            "Stage",
+            "Grade"
+         ],
+         "title":"SpecimenRecord",
+         "type":"object"
+      }
+   },
+   "properties":{
+      "specimens":{
+         "items":{
+            "$ref":"#/$defs/SpecimenRecord"
+         },
+         "title":"Specimens",
+         "type":"array"
+      }
+   },
+   "required":[
+      "specimens"
+   ],
+   "title":"ReportExtraction",
+   "type":"object"
+}
 ```
 
 ---
@@ -79,10 +149,13 @@ Infer `Stage` from diagnosis text using these mappings (apply the most specific 
 | "carcinoma in situ" / "CIS" | `"CIS"` |
 | "displasia" (without invasive carcinoma) | `"displasia"` |
 | "invasione della muscolare propria" | `"pT2"` |
+| "invasione non valutabile" | `"Undefined"` |
+| `Bladder_tumor == false` | `"Not Applicable"` |
 
 - **Important**: `"Presente la tonaca muscolare"` (muscle present in sample) does NOT imply `pT2`.
 - Combined lesions are allowed: e.g., low-grade papillary + CIS → `"pTa + CIS"`.
-- If stage cannot be determined, use `None`.
+- If stage cannot be determined, use `"Undefined"`.
+- If `Bladder_tumor == false`, use `"Not Applicable"`.
 
 ### 6. GRADING (only when `Bladder_tumor == true`)
 Map `Grade` from diagnosis text:
@@ -93,16 +166,18 @@ Map `Grade` from diagnosis text:
 | "alto grado" / "high grade" / "HG" | `"High"` |
 | WHO 1973 notation: G1, G2, G3, G1/2, G2/3 | Keep exact form (e.g., `"G1"`, `"G2/3"`) |
 | Both papillary lesion and CIS present | Use papillary lesion grade only |
-| Grade absent or not applicable | `None` |
+| Bladder tumor, but grade is not indicated | `"Undefined"` |
+| `Bladder_tumor == false` | `"Not Applicable"` |
 
 - Examples:
   - `"lesione uroteliale papillare di basso grado"` → `"Low"`
   - `"carcinoma papillare non infiltrante G1"` → `"G1"`
   - `"lesione uroteliale HG"` → `"High"`
   - `"lesione uroteliale di basso grado con associato CIS"` → `"Low"`
+  - `"Neoplasia uroteliale di basso grado con focali aree di alto grado"` → `"High and Low"`
 
-### 7. NULL / MISSING DATA
+### 7. MISSING DATA
 - Do **not** hallucinate or infer missing information.
-- `Stage` and `Grade`: use `None` when unknown, not applicable, or when `Bladder_tumor == false`.
-- `Label`, `Specimen_description`, `Diagnosis`: use empty string `""` only when truly unavailable.
-- If `Bladder_tumor == false`, **both** `Stage` and `Grade` must be `None`.
+- `Stage` and `Grade`: `"Undefined"` when you don't manage to extrac the information from the text for a bladder tumor. Use  `"Not Applicable"` when `Bladder_tumor == false`.
+- `Label`, `Specimen_description`, `Diagnosis`: must never be empty. The information is allways in the text.
+- If `Bladder_tumor == false`, **both** `Stage` and `Grade` must be `"Not Applicable"`.

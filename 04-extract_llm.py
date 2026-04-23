@@ -3,7 +3,8 @@ import os
 import glob
 import json
 import pandas as pd
-from pydantic import BaseModel, field_validator, model_validator
+from typing import Literal
+from pydantic import BaseModel, Field, model_validator
 from ollama import Client
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -22,27 +23,50 @@ OLLAMA_HOST    = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434") # rever
 
 # Pydantic models to define the expected structure of the LLM output for each specimen.
 class SpecimenRecord(BaseModel):
-    Label: str | None = ""
-    Specimen_description: str = ""
-    Diagnosis: str = ""
-    Bladder_tumor: bool
-    Stage: str | None = None
-    Grade: str | None = None
-
-    @field_validator("Specimen_description", "Diagnosis")
-    @classmethod
-    def validate_text_length(cls, value):
-        if len(value.strip()) <= 3:
-            raise ValueError("must be longer than 3 characters")
-        return value
+    Label: Literal["NA", "A", "B", "C", "D", "E","F",
+                   "G", "H", "I", "J", "K", "L", "M",
+                   "N", "O", "P", "Q", "R", "S", "T",
+                   "U", "V", "W", "X", "Y", "Z"] = Field(
+        ...,
+        description=f"Specimen label.",
+    )
+    Specimen_description: str = Field(
+        ...,
+        min_length=4,
+        description="Mandatory concise description of the submitted specimen. Never empty.",
+    )
+    Diagnosis: str = Field(
+        ...,
+        min_length=4,
+        description="Mandatory normalized diagnosis in Italian. Never empty.",
+    )
+    Bladder_tumor: bool = Field(..., description="true if this specimen is a bladder tumor lesion, otherwise false.")
+    Stage: Literal["PUNLMP", "pTa", "pT1", "CIS",
+                   "displasia", "pT2", "pTa + CIS",
+                   "pT1 + CIS", "pT2 + CIS", "Undefined",
+                   "Not Applicable"] = Field(
+        ...,
+        description=f"Mandatory bladder tumor stage.",
+    )
+    Grade: Literal["Low", "High", "High and Low", "G1",
+                   "G2", "G3", "G4", "G1/2", "G2/3",
+                   "Undefined", "Not Applicable"] = Field(
+        ...,
+        description=f"Mandatory bladder tumor grade.",
+    )
 
     @model_validator(mode="after")
     def validate_bladder_fields(self):
         if self.Bladder_tumor:
-            if self.Stage is None:
-                raise ValueError("Stage must not be null when Bladder_tumor is true")
-            if self.Grade is None:
-                raise ValueError("Grade must not be null when Bladder_tumor is true")
+            if self.Stage == "Not Applicable":
+                raise ValueError("Stage must not be 'Not Applicable' when Bladder_tumor is true")
+            if self.Grade == "Not Applicable":
+                raise ValueError("Grade must not be 'Not Applicable' when Bladder_tumor is true")
+        else:
+            if self.Stage != "Not Applicable":
+                raise ValueError("Stage must be 'Not Applicable' when Bladder_tumor is false")
+            if self.Grade != "Not Applicable":
+                raise ValueError("Grade must be 'Not Applicable' when Bladder_tumor is false")
         return self
 
 # The overall response schema from each report, which contains one or more specimens.
@@ -72,57 +96,68 @@ def build_messages(base_prompt, report_text, failure_reason=None):
 
     return messages
 
+def extract_with_retry(base_prompt, report_text, max_attempts=2):
+    """Call the LLM and return a validated ReportExtraction object."""
+    failure_reason = None
+    last_raw_response = ""
+
+    for _ in range(max_attempts):
+        response = client.chat(
+            model=OLLAMA_MODEL,
+            messages=build_messages(base_prompt, report_text, failure_reason),
+            format=ReportExtraction.model_json_schema(),
+            stream=False,
+            think=THINK,
+            options={
+                "num_predict": 4096,
+                "temperature": 0,
+                "repeat_penalty": 1.5,
+                "num_ctx": 16384,
+            },
+        )
+
+        last_raw_response = response.message.content
+
+        try:
+            return ReportExtraction.model_validate_json(last_raw_response)
+        except Exception as e:
+            failure_reason = str(e)
+
+    raise ValueError(
+        f"Validation failed after {max_attempts} attempts: "
+        f"{failure_reason} | raw_response={last_raw_response}"
+    )
+
+
+def extraction_to_dataframe(extraction, filename):
+    """Convert a ReportExtraction object to a DataFrame."""
+    rows = [
+        {
+            "Source_File": filename,
+            "Label": s.Label,
+            "Specimen_description": s.Specimen_description,
+            "Diagnosis": s.Diagnosis,
+            "Bladder_tumor": s.Bladder_tumor,
+            "Stage": s.Stage,
+            "Grade": s.Grade,
+        }
+        for s in extraction.specimens
+    ]
+    return pd.DataFrame(rows)
+
+
 def process_file(txt_path, base_prompt):
     """Process a single report file. Returns (filename, df | None, error | None)."""
     filename = os.path.basename(txt_path)
 
-    with open(txt_path, "r", encoding="utf-8") as f:
-        report_text = f.read()
-
     try:
-        failure_reason = None
-        raw_response = ""
+        with open(txt_path, "r", encoding="utf-8") as f:
+            report_text = f.read()
 
-        for attempt in range(2):
-            response = client.chat(
-                model=OLLAMA_MODEL,
-                messages=build_messages(base_prompt, report_text, failure_reason),
-                format=ReportExtraction.model_json_schema(),
-                stream=False,
-                think=THINK,
-                options={
-                    "num_predict": 4096,
-                    "temperature": 0.1, # default 0.7
-                    "repeat_penalty": 1.4, # default 1.1
-                    "num_ctx": 16384,
-                },
-            )
+        extraction = extract_with_retry(base_prompt, report_text)
+        df = extraction_to_dataframe(extraction, filename)
 
-            raw_response = response.message.content
-
-            try:
-                extraction = ReportExtraction.model_validate_json(raw_response)
-                break
-            except Exception as e:
-                failure_reason = str(e)
-                if attempt == 1:
-                    return filename, None, f"{failure_reason} | raw_response={raw_response}"
-        else:
-            return filename, None, "LLM extraction failed without a parsed response"
-
-        rows = []
-        for s in extraction.specimens:
-            rows.append({
-                "Source_File": filename,
-                "Label": s.Label,
-                "Specimen_description": s.Specimen_description,
-                "Diagnosis": s.Diagnosis,
-                "Bladder_tumor": s.Bladder_tumor,
-                "Stage": s.Stage if s.Bladder_tumor else None,
-                "Grade": s.Grade if s.Bladder_tumor else None,
-            })
-
-        return filename, pd.DataFrame(rows), None
+        return filename, df, None
 
     except Exception as e:
         return filename, None, str(e)
