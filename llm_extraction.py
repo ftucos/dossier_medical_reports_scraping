@@ -40,33 +40,33 @@ class SpecimenRecord(BaseModel):
         min_length=4,
         description="Mandatory normalized diagnosis in Italian. Never empty.",
     )
-    Bladder_tumor: bool = Field(..., description="true if this specimen is a bladder tumor lesion, otherwise false.")
+    Urothelial_tumor: bool = Field(..., description="true if this specimen contains a urothelial tumor lesion, otherwise false.")
     Stage: Literal["PUNLMP", "pTa", "pT1", "CIS",
                    "displasia", "pT2", "pTa + CIS",
                    "pT1 + CIS", "pT2 + CIS", "pTX",
                    "Not Applicable"] = Field(
         ...,
-        description=f"Mandatory bladder tumor stage.",
+        description=f"Mandatory urothelial tumor stage.",
     )
     Grade: Literal["Low", "High", "High and Low", "G1",
                    "G2", "G3", "G4", "G1/2", "G2/3", "G1/G2", "G2/G3",
                    "Undefined", "Not Applicable"] = Field(
         ...,
-        description=f"Mandatory bladder tumor grade.",
+        description=f"Mandatory urothelial tumor grade.",
     )
 
     @model_validator(mode="after")
-    def validate_bladder_fields(self):
-        if self.Bladder_tumor:
+    def validate_urothelial_fields(self):
+        if self.Urothelial_tumor:
             if self.Stage == "Not Applicable":
-                raise ValueError("Stage must not be 'Not Applicable' when Bladder_tumor is true")
+                raise ValueError("Stage must not be 'Not Applicable' when Urothelial_tumor is true")
             if self.Grade == "Not Applicable":
-                raise ValueError("Grade must not be 'Not Applicable' when Bladder_tumor is true")
+                raise ValueError("Grade must not be 'Not Applicable' when Urothelial_tumor is true")
         else:
             if self.Stage != "Not Applicable":
-                raise ValueError("Stage must be 'Not Applicable' when Bladder_tumor is false")
+                raise ValueError("Stage must be 'Not Applicable' when Urothelial_tumor is false")
             if self.Grade != "Not Applicable":
-                raise ValueError("Grade must be 'Not Applicable' when Bladder_tumor is false")
+                raise ValueError("Grade must be 'Not Applicable' when Urothelial_tumor is false")
         return self
 
 # The overall response schema from each report, which contains one or more specimens.
@@ -137,7 +137,7 @@ def extraction_to_dataframe(extraction, filename):
             "Label": s.Label,
             "Specimen_description": s.Specimen_description,
             "Diagnosis": s.Diagnosis,
-            "Bladder_tumor": s.Bladder_tumor,
+            "Urothelial_tumor": s.Urothelial_tumor,
             "Stage": s.Stage,
             "Grade": s.Grade,
         }
@@ -154,7 +154,7 @@ def empty_result_dataframe(filename):
             "Label": "FAILED LLM EXTRACTION",
             "Specimen_description": "",
             "Diagnosis": "",
-            "Bladder_tumor": "",
+            "Urothelial_tumor": "",
             "Stage": "",
             "Grade": "",
         }
