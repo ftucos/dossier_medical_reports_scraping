@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os
 import glob
+import re
 import pdfplumber
 
 # === CONFIG ===
@@ -13,6 +14,20 @@ def remove_watermark(page):
         if ch["size"] <= 60
     ]
     return filtered_chars
+
+
+def highlight_report_sections(text):
+    replacements = [
+        (r"^REFERTO ISTOPATOLOGICO", r"\n# REFERTO ISTOPATOLOGICO"),
+        (r"^Materiale inviato:", r"\n## Materiale inviato:"),
+        (r"^Descrizione macroscopica:", r"\n## Descrizione macroscopica:"),
+        (r"^Diagnosi istopatologica:", r"\n## Diagnosi istopatologica:"),
+    ]
+
+    for pattern, replacement in replacements:
+        text = re.sub(pattern, replacement, text, flags=re.MULTILINE)
+
+    return text
 
 def main():
     if not os.path.exists(INPUT_DIR):
@@ -51,6 +66,8 @@ def main():
             
             if not full_text:
                 raise Exception(f"No text found in {filename}")
+
+            full_text = highlight_report_sections(full_text)
                 
             # Write to the output .txt file
             with open(output_txt_path, "w", encoding="utf-8") as f:

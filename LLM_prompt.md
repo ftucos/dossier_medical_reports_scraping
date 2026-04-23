@@ -14,7 +14,7 @@ Return ONLY a valid JSON object. No explanations, no extra text.
   - `Specimen_description` and `Diagnosis` are always present in the text and must never be empty.
   - At least one bladder tumor specimen is always present; therefore, at least one specimen must have `Bladder_tumor = true`.
   - **`Stage` and `Grade` follow a strict dependency on `Bladder_tumor`:**
-  - `Bladder_tumor = true` → Stage and Grade must NOT be `"Not Applicable"`; use `"Undefined"` if the information is absent in the text.
+  - `Bladder_tumor = true` → Stage and Grade must NOT be `"Not Applicable"`; use `"pTX"` and `"Undefined"` respectively if the information is absent in the text.
   - `Bladder_tumor = false` → Stage and Grade must BOTH be `"Not Applicable"`.
 
 
@@ -93,7 +93,7 @@ Apply the most specific match:
 
 Input text:
 
-```
+```markdown
 _______________________________________ UNIVERSITA' DEGLI STUDI
 Istituto XXXXXX
 Istituto di Ricovero e Cura a Carattere Scientifico Scuola di Specializzazione
@@ -101,17 +101,21 @@ Istituto di Ricovero e Cura a Carattere Scientifico Scuola di Specializzazione
 Dipartimento di Anatomia Patologica
 e Medicina di Laboratorio
 Direttore Prof. Mario Rossi
-REFERTO ISTOPATOLOGICO
+
+# REFERTO ISTOPATOLOGICO
 Data ricevimento 01/01/2001 Esame 01-I-001234
 Paziente : N. CC12345678 MARIO BIANCHI
 Età : 100 Sesso: M Data di Nascita : 01/01/1999
 Divisione : Urologia
-Materiale inviato:
+
+## Materiale inviato:
 Biopsie vescicali da resezione endoscopica transuretrale (Turv).
-Descrizione macroscopica:
+
+## Descrizione macroscopica:
 Turv: due frammenti, il maggiore di 1,1 cm (A).
 Base d'impianto: tre frammenti, il maggiore di 0,7 cm (B).
-Diagnosi istopatologica:
+
+## Diagnosi istopatologica:
 A) Frammenti superficiali di carcinoma uroteliale papillare di alto grado.
 B) Frammenti di parete vescicale con focali aspetti di iperplasia uroteliale papillare.
 Presenza di estesi artefatti di tipo coagulativo.
