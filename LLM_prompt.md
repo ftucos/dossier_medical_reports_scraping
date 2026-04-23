@@ -54,8 +54,8 @@ Write a short, summarized Italian diagnosis.
 
 Set `Bladder_tumor = true` **only** if the specimen contains a **bladder cancer lesion**.
 
-- **True clues**: `"vescica"`, `"uroteliale"`, `"TURB"`, `"neoformazione vescicale"`
-- **False**: benign bladder tissue, inflammation, negative margins, all non-bladder specimens
+- **True clues**: `"formazione papillare"`, `"TURB"`, `"neoformazione vescicale"`, `"Carcinoma uroteliale papillare"`
+- **False**: benign bladder tissue, hyperplasia, inflammation, negative margins, all non-bladder specimens
 
 > ⚠️ **`"Iperplasia uroteliale"`** is a benign alteration of the bladder therefore `Bladder_tumor = false`
 
