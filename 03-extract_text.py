@@ -19,9 +19,10 @@ def remove_watermark(page):
 def highlight_report_sections(text):
     replacements = [
         (r"^REFERTO ISTOPATOLOGICO", r"\n# REFERTO ISTOPATOLOGICO"),
-        (r"^Materiale inviato:", r"\n## Materiale inviato:"),
-        (r"^Descrizione macroscopica:", r"\n## Descrizione macroscopica:"),
-        (r"^Diagnosi istopatologica:", r"\n## Diagnosi istopatologica:"),
+        (r"^Materiale ricevuto", r"\n## Materiale ricevuto"),
+        (r"^Materiale inviato", r"\n## Materiale inviato"),
+        (r"^Descrizione macroscopica", r"\n## Descrizione macroscopica"),
+        (r"^Diagnosi istopatologica", r"\n## Diagnosi istopatologica"),
     ]
 
     for pattern, replacement in replacements:
