@@ -4,6 +4,9 @@ case_list.csv
 # llm_extracted_data output csv
 llm_extracted_data*.csv
 
+# failed requests
+llm_failed_requests-*.jsonl
+
 # authentication token
 .auth_token
 
