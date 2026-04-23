@@ -7,3 +7,6 @@ histology_reports/
 
 # Ignore patient list
 case_list.csv
+
+# python cache
+__pycache__
