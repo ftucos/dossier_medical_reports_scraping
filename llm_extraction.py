@@ -17,6 +17,7 @@ PROMPT_FILE    = "LLM_prompt.md"
 THINK          = False               # whether to use streaming response for better performance on large outputs
 MAX_CONCURRENT = 4                   # number of parallel requests
 OLLAMA_HOST    = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434") # revert to default ollama host if env var not set
+MAX_OUT_TOKEN = 4096                        # max output tokens for the LLM response (increase when Think mode is on)
 
 
 # === STRUCTURED OUTPUT SCHEMA ===
@@ -109,7 +110,7 @@ def extract_with_retry(base_prompt, report_text, max_attempts=2):
             stream=False,
             think=THINK,
             options={
-                "num_predict": 4096,
+                "num_predict": MAX_OUT_TOKEN,
                 "temperature": 0,
                 "repeat_penalty": 1.5,
                 "num_ctx": 16384,
