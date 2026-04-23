@@ -43,7 +43,7 @@ class SpecimenRecord(BaseModel):
     Bladder_tumor: bool = Field(..., description="true if this specimen is a bladder tumor lesion, otherwise false.")
     Stage: Literal["PUNLMP", "pTa", "pT1", "CIS",
                    "displasia", "pT2", "pTa + CIS",
-                   "pT1 + CIS", "pT2 + CIS", "Undefined",
+                   "pT1 + CIS", "pT2 + CIS", "pTX",
                    "Not Applicable"] = Field(
         ...,
         description=f"Mandatory bladder tumor stage.",
