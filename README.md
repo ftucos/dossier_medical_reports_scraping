@@ -11,6 +11,15 @@ pip install requests pandas pdfplumber pydantic ollama
 
 You also must provide a CSV file named `case_list.csv` containing the list of target patient IDs and Exams IDs. By default, the scripts look for a column named `CC` and `EXAMID`.
 
+Example `case_list.csv`:
+
+```csv
+CC,EXAMID
+CC00000001,01-I-001234
+CC00000002,01-I-001235
+CC00000002,02-I-001237
+```
+
 ## Authentication (Important)
 
 The tool requires your personal authentication code to access the Dossier API securely. **Do not share that code.** It grants access to your active session.
