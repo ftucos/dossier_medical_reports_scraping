@@ -69,7 +69,7 @@ Apply the most specific match:
 
 | Evidence in text                                             | Stage                                       |
 | ------------------------------------------------------------ | ------------------------------------------- |
-| "neoplasia uroteliale papillare a incerto potenziale di malignità" | `"PUNLMP"`                                  |
+| "neoplasia uroteliale papillare a incerto/basso potenziale di malignità" | `"PUNLMP"`                                  |
 | "papillare non invasivo" / no mention of subepithelial invasion | `"pTa"`                                     |
 | "invasione lamina propria" / "invasione corion" / "infiltrazione del connettivo sottoepiteliale" | `"pT1"`                                     |
 | "carcinoma in situ" / "CIS" / "Tis"                          | `"CIS"`                                     |
