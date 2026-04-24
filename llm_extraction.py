@@ -43,9 +43,9 @@ class SpecimenRecord(BaseModel):
     )
     Urothelial_tumor: bool = Field(..., description="true if this specimen contains a urothelial tumor lesion, otherwise false.")
     Stage: Literal["PUNLMP", "pTa", "pT1", "CIS",
-                   "displasia", "pT2", "pTa + CIS",
-                   "pT1 + CIS", "pT2 + CIS", "pTX",
-                   "Not Applicable"] = Field(
+                   "displasia", "pT2", "PUNLMP + CIS",
+                   "pTa + CIS", "pT1 + CIS", "pT2 + CIS",
+                   "pTX", "Not Applicable"] = Field(
         ...,
         description=f"Mandatory urothelial tumor stage.",
     )
@@ -72,7 +72,22 @@ class SpecimenRecord(BaseModel):
 
 # The overall response schema from each report, which contains one or more specimens.
 class ReportExtraction(BaseModel):
-    specimens: list[SpecimenRecord]
+    specimens: list[SpecimenRecord] = Field(
+        ...,
+        min_length=1,
+        description="List of extracted specimens from the report.",
+    )
+
+    @model_validator(mode="after")
+    def validate_unique_labels(self):
+        label_counts = Counter(specimen.Label for specimen in self.specimens)
+        duplicate_labels = [label for label, count in label_counts.items() if count > 1]
+        if duplicate_labels:
+            raise ValueError(
+                "Each specimen Label must appear only once per report; "
+                f"duplicate Label(s): {', '.join(duplicate_labels)}"
+            )
+        return self
 
 # === CLIENT SETUP ===
 client = Client(host=OLLAMA_HOST)

@@ -16,6 +16,7 @@ Return ONLY a valid JSON object. No explanations, no extra text.
   - **`Stage` and `Grade` follow a strict dependency on `Urothelial_tumor`:**
   - `Urothelial_tumor = true` → Stage and Grade must NOT be `"Not Applicable"`; use `"pTX"` and `"Undefined"` respectively if the information is absent in the text.
   - `Urothelial_tumor = false` → Stage and Grade must BOTH be `"Not Applicable"`.
+  - Each `Label` value may appear only once per report extraction. Do not create duplicate records with the same label letter; merge all information for the same label into a single specimen record.
 
 
 ---
@@ -29,6 +30,8 @@ Extract labels (A, B, C, …) using these sources in order of priority:
 2. **"Materiale inviato/ricevuto"** — fallback; it may be a generic description covering multiple specimens
 
 When only one specimen is submitted, often no label is indicated. You must not leave it empty. If no labels are identifiable, create a single record with `Label = "NA"`.
+
+Create exactly one record for each distinct label. If the same label appears in multiple sections or diagnosis lines, merge those details into the single record for that label.
 
 ---
 
@@ -75,7 +78,7 @@ Apply the most specific match:
 | "carcinoma in situ" / "CIS" / "Tis"                          | `"CIS"`                                     |
 | "displasia" (without invasive carcinoma)                     | `"displasia"`                               |
 | "invasione della muscolare propria"                          | `"pT2"`                                     |
-| Combined lesions (e.g., low-grade papillary + CIS)           | `"pTa + CIS"`, `"pT1 + CIS"`, `"pT2 + CIS"` |
+| Combined lesions (e.g., low-grade papillary + CIS)           | `"PUNLMP + CIS"`, `"pTa + CIS"`, `"pT1 + CIS"`, `"pT2 + CIS"` |
 | "Infiltrazione dello stroma non valutabile." Stage not determinable | `"pTX"`                                     |
 
 ---
