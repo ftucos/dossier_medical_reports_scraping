@@ -1,8 +1,8 @@
 # patient list
 case_list.csv
 
-# llm_extracted_data output csv
-llm_extracted_data*.csv
+# llm_extracted_data output
+llm_extracted_data/
 
 # failed requests
 llm_failed_requests-*.jsonl
