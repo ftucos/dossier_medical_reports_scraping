@@ -4,20 +4,21 @@ import glob
 import json
 import pandas as pd
 from typing import Literal
+from collections import Counter
 from pydantic import BaseModel, Field, model_validator
 from ollama import Client
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # === CONFIG ===
 INPUT_DIR      = "histology_reports/text"
-OLLAMA_MODEL   = "medgemma:27b"   # qwen3.5:latest | qwen3.5:122b
+OLLAMA_MODEL   = "gpt-oss:120b"   # qwen3.5:latest | qwen3.5:122b
 OUTPUT_CSV     = f"llm_extracted_data/llm_extracted_data-{OLLAMA_MODEL.replace(':', '_')}.csv"
 FAILED_LOG     = f"llm_extracted_data/llm_failed_requests-{OLLAMA_MODEL.replace(':', '_')}.jsonl"
 PROMPT_FILE    = "LLM_prompt.md"
-THINK          = False               # whether to use streaming response for better performance on large outputs
+THINK          = True               # whether to use streaming response for better performance on large outputs
 MAX_CONCURRENT = 4                   # number of parallel requests
 OLLAMA_HOST    = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434") # revert to default ollama host if env var not set
-MAX_OUT_TOKEN = 4096                        # max output tokens for the LLM response (increase when Think mode is on)
+MAX_OUT_TOKEN = 4096*4                        # max output tokens for the LLM response (increase when Think mode is on)
 
 
 # === STRUCTURED OUTPUT SCHEMA ===
@@ -27,7 +28,12 @@ class SpecimenRecord(BaseModel):
     Label: Literal["NA", "A", "B", "C", "D", "E","F",
                    "G", "H", "I", "J", "K", "L", "M",
                    "N", "O", "P", "Q", "R", "S", "T",
-                   "U", "V", "W", "X", "Y", "Z"] = Field(
+                   "U", "V", "W", "X", "Y", "Z", "AA",
+                   "AB", "AC", "AD", "AE", "AF", "AG",
+                   "AH", "AI", "AJ", "AK", "AL", "AM",
+                   "AN", "AO", "AP", "AQ", "AR", "AS",
+                   "AT", "AU", "AV", "AW", "AX", "AY",
+                   "AZ"] = Field(
         ...,
         description=f"Specimen label.",
     )
