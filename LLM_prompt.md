@@ -25,13 +25,17 @@ Return ONLY a valid JSON object. No explanations, no extra text.
 
 ### 1. Specimen Labels
 
-Extract labels (A, B, C, …) using these sources in order of priority:
+Extract labels (A, B, C, …, Z, AA, AB … ) using these sources in order of priority:
 1. **"Descrizione macroscopica"** — authoritative for letter-to-specimen mapping
 2. **"Materiale inviato/ricevuto"** — fallback; it may be a generic description covering multiple specimens
 
 When only one specimen is submitted, often no label is indicated. You must not leave it empty. If no labels are identifiable, create a single record with `Label = "NA"`.
 
 Create exactly one record for each distinct label. If the same label appears in multiple sections or diagnosis lines, merge those details into the single record for that label.
+
+Specimen labels may skip some letters. In particular, “I” and “O” are commonly omitted because they are ambiguous with the numbers 1 and 0.
+
+If the number of specimens exceeds the available single-letter labels, indexing continues with double-letter labels: “AA”, “AB”, …, “AZ”, and so on.
 
 ---
 
@@ -59,7 +63,7 @@ Set `Urothelial_tumor = true` **only** if the specimen contains a **urothelial t
 
 - The most important and determining source is **`Diagnosi istopatologica`**.
 - **`Descrizione macroscopica`** and **`Materiale inviato/ricevuto`** may support the decision, but they must not override a clear histopathological diagnosis.
-- Set the flag to `true` for urothelial neoplastic diagnoses such as `"carcinoma uroteliale papillare"`, `"carcinoma uroteliale"`, `"neoplasia uroteliale papillare a incerto potenziale di malignità"`, `"CIS"`, or other explicit urothelial tumor lesions.
+- Set the flag to `true` for urothelial neoplastic diagnoses such as `"carcinoma uroteliale papillare"`, `"carcinoma uroteliale"`, `"neoplasia uroteliale papillare a incerto potenziale di malignità"`, `"CIS"`, `"pTis"` or other explicit urothelial tumor lesions.
 - Set the flag to `false` for benign or non-neoplastic findings such as hyperplasia, inflammation, reactive changes, negative margins, normal urothelium, and for clearly non-urothelial specimens.
 
 > ⚠️ **`"Iperplasia uroteliale"`** is a benign urothelial alteration, therefore `Urothelial_tumor = false`
@@ -75,11 +79,13 @@ Apply the most specific match:
 | "neoplasia uroteliale papillare a incerto/basso potenziale di malignità" | `"PUNLMP"`                                  |
 | "papillare non invasivo" / no mention of subepithelial invasion | `"pTa"`                                     |
 | "invasione lamina propria" / "invasione corion" / "infiltrazione del connettivo sottoepiteliale" | `"pT1"`                                     |
-| "carcinoma in situ" / "CIS" / "Tis"                          | `"CIS"`                                     |
+| "carcinoma in situ" / "CIS" / "Tis" / "pTis"                 | `"CIS"`                                     |
 | "displasia" (without invasive carcinoma)                     | `"displasia"`                               |
 | "invasione della muscolare propria"                          | `"pT2"`                                     |
 | Combined lesions (e.g., low-grade papillary + CIS)           | `"PUNLMP + CIS"`, `"pTa + CIS"`, `"pT1 + CIS"`, `"pT2 + CIS"` |
 | "Infiltrazione dello stroma non valutabile." Stage not determinable | `"pTX"`                                     |
+
+Note that "pTis" and "CIS" refer to the same entity. For consistency with the output JSON schema, always report this as "CIS".
 
 ---
 
