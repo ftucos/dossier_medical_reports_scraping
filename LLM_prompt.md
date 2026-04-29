@@ -96,7 +96,8 @@ Note that "pTis" and "CIS" refer to the same entity. For consistency with the ou
 | "basso grado" / "low grade" / "LG"                           | `"Low"`                                  |
 | "alto grado" / "high grade" / "HG"                           | `"High"`                                 |
 | "Carcinoma uroteliale papillare di basso grado con focali aree di alto grado", both low and high grade present | `"High and Low"`                         |
-| WHO 1973 notation (G1, G2, G3, G1/2, G2/3)                   | Keep exact form `"G1"`, `"G1/2"`, `"G3"` |
+| only WHO 1973 notation (G1, G2, G3, G1/2, G2/3)                   | Keep exact form `"G1"`, `"G1/2"`, `"G3"` |
+| Both WHO 1973 and WHO 2004 notations are provided. E.g., "Carcinoma uroteliale papillare di basso grado (G2)" | Use the WHO 2004 notation as the primary value and include the WHO 1973 notation in parentheses: `"Low (G2)"` |
 | "lesione di basso grado con associato CIS", papillary lesion + CIS coexist | `"Low"`, use papillary lesion grade only |
 | Grade not indicated or not evaluable                         | `"Undefined"`|
 | "carcinoma epatocellulare moderatamente differenziato (G2)." | `"Not Applicable"`, because `Urothelial_tumor = false`|

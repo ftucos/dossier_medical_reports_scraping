@@ -11,7 +11,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # === CONFIG ===
 INPUT_DIR      = "histology_reports/text"
-OLLAMA_MODEL   = "gpt-oss:120b"   # qwen3.5:latest | qwen3.5:122b
+OLLAMA_MODEL   = "gemma4:31b"   # qwen3.5:latest | qwen3.5:122b
 OUTPUT_CSV     = f"llm_extracted_data/llm_extracted_data-{OLLAMA_MODEL.replace(':', '_')}.csv"
 FAILED_LOG     = f"llm_extracted_data/llm_failed_requests-{OLLAMA_MODEL.replace(':', '_')}.jsonl"
 PROMPT_FILE    = "LLM_prompt.md"
@@ -57,6 +57,7 @@ class SpecimenRecord(BaseModel):
     )
     Grade: Literal["Low", "High", "High and Low", "G1",
                    "G2", "G3", "G4", "G1/2", "G2/3", "G1/G2", "G2/G3",
+                   "Low (G1)", "Low (G2)", "High (G2)", "High (G3)", 
                    "Undefined", "Not Applicable"] = Field(
         ...,
         description=f"Mandatory urothelial tumor grade.",
