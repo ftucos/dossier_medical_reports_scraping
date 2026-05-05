@@ -4,7 +4,7 @@
 #SBATCH --error=logs/llm_extract_%j.err
 #SBATCH --time=08:00:00
 #SBATCH --gres=gpu:1          # Request 1 GPU
-#SBATCH --mem=40G             # Request 40GB RAM
+#SBATCH --mem=80G             # Request 80GB RAM
 #SBATCH --cpus-per-task=8
 
 # === LOAD ENVIRONMENT ===
@@ -16,17 +16,17 @@ mamba activate ollama
 module load CUDA/12.6.0
 
 # Add ollama to PATH
-export PATH="/hpcnfs/scratch/SPE/ieo5660/local_LLM/bin:$PATH"
+export PATH="/hpcnfs/scratch/SPE/ieo5660/ollama/bin:$PATH"
 
 # model path for ollama
-export OLLAMA_MODELS="/hpcnfs/home/ieo5660/scratch/ieo5660/local_LLM/models/"
+export OLLAMA_MODELS="/hpcnfs/home/ieo5660/scratch/ieo5660/ollama/models/"
 
 # disable cloud features
 export OLLAMA_NO_CLOUD=1
 
 # === OLLAMA START ===
 # change port from 11434 default to avoid conflicting with other users on the same cluster
-export OLLAMA_HOST=127.0.0.1:11437
+export OLLAMA_HOST=127.0.0.1:11434
 
 # Run Ollama server in the background
 # Start Ollama in background
@@ -42,4 +42,3 @@ echo "Ollama is up!"
 # === RUN EXTRACTION SCRIPT ===
 
 python llm_extraction.py
-

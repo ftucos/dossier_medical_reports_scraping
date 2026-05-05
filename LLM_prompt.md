@@ -91,16 +91,28 @@ Note that "pTis" and "CIS" refer to the same entity. For consistency with the ou
 
 ### 6. Grade *(only when `Urothelial_tumor = true`)*
 
-| Evidence in text                                             | Grade                                    |
+Extract the tumor grade according to the evidence provided in the text.
+
+**Important rule:**  
+When both WHO 2004/2016 terminology and WHO 1973 grading are explicitly reported in the text, the output **must preserve both systems**.  
+Use the WHO 2004/2016 grade as the primary value and append the WHO 1973 grade in parentheses.
+
+Examples:
+- `"Carcinoma uroteliale papillare di basso grado (G2)"` → `"Low (G2)"`
+- `"Carcinoma uroteliale papillare di basso grado (G1/G2)"` → `"Low (G1/G2)"`
+- `"Carcinoma uroteliale papillare di alto grado (G3)"` → `"High (G3)"`
+- `"Low grade papillary urothelial carcinoma (G1)"` → `"Low (G1)"`
+
+| Evidence in text | Grade |
 | ------------------------------------------------------------ | ---------------------------------------- |
-| "basso grado" / "low grade" / "LG"                           | `"Low"`                                  |
-| "alto grado" / "high grade" / "HG"                           | `"High"`                                 |
-| "Carcinoma uroteliale papillare di basso grado con focali aree di alto grado", both low and high grade present | `"High and Low"`                         |
-| only WHO 1973 notation (G1, G2, G3, G1/2, G2/3)                   | Keep exact form `"G1"`, `"G1/2"`, `"G3"` |
-| Both WHO 1973 and WHO 2004 notations are provided. E.g., "Carcinoma uroteliale papillare di basso grado (G2)" | Use the WHO 2004 notation as the primary value and include the WHO 1973 notation in parentheses: `"Low (G2)"` |
-| "lesione di basso grado con associato CIS", papillary lesion + CIS coexist | `"Low"`, use papillary lesion grade only |
-| Grade not indicated or not evaluable                         | `"Undefined"`|
-| "carcinoma epatocellulare moderatamente differenziato (G2)." | `"Not Applicable"`, because `Urothelial_tumor = false`|
+| Both WHO 2004/2016 and WHO 1973 notations are provided | Return both: WHO 2004/2016 as primary value, WHO 1973 in parentheses, e.g. `"Low (G2)"`, `"High (G3)"` |
+| `"basso grado"` / `"low grade"` / `"LG"` WHO 2004/2016 only | `"Low"` |
+| `"alto grado"` / `"high grade"` / `"HG"` WHO 2004/2016 only | `"High"` |
+| Only WHO 1973 notation is provided: `G1`, `G2`, `G3`, `G1/G2`, `G2/G3` | Keep the exact WHO 1973 form, e.g. `"G1"`, `"G1/G2"`, `"G3"` |
+| `"Carcinoma uroteliale papillare di basso grado con focali aree di alto grado"` or both low- and high-grade papillary components are present | `"High and Low"` |
+| Papillary lesion plus CIS, e.g. `"lesione di basso grado con associato CIS"` | Use the papillary lesion grade only, e.g. `"Low"` |
+| Grade not indicated or not evaluable | `"Undefined"` |
+| Non-urothelial tumor, e.g. `"carcinoma epatocellulare moderatamente differenziato (G2)"` | `"Not Applicable"` because `Urothelial_tumor = false` |
 
 ## Example
 
@@ -129,7 +141,7 @@ Turv: due frammenti, il maggiore di 1,1 cm (A).
 Base d'impianto: tre frammenti, il maggiore di 0,7 cm (B).
 
 ## Diagnosi istopatologica:
-A) Frammenti superficiali di carcinoma uroteliale papillare di alto grado.
+A) Frammenti superficiali di carcinoma uroteliale papillare di alto grado (G3).
 B) Frammenti di parete vescicale con focali aspetti di iperplasia uroteliale papillare.
 Presenza di estesi artefatti di tipo coagulativo.
 T-74000 M-81203
@@ -152,7 +164,7 @@ Expected output:
       "Diagnosis": "Carcinoma uroteliale papillare di alto grado",
       "Urothelial_tumor": true,
       "Stage": "pTa",
-      "Grade": "High"
+      "Grade": "High (G3)"
     },
     {
       "Label": "B",
