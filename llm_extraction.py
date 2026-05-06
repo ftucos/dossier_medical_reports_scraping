@@ -11,14 +11,14 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # === CONFIG ===
 INPUT_DIR      = "histology_reports/text"
-OLLAMA_MODEL   = "nemotron-3-super:120b"   # qwen3.5:latest | qwen3.5:122b
+OLLAMA_MODEL   = "qwen3.5:122b"   # qwen3.5:latest | qwen3.5:122b
 OUTPUT_CSV     = f"llm_extracted_data/llm_extracted_data-{OLLAMA_MODEL.replace(':', '_')}.csv"
 FAILED_LOG     = f"llm_extracted_data/llm_failed_requests-{OLLAMA_MODEL.replace(':', '_')}.jsonl"
 PROMPT_FILE    = "LLM_prompt.md"
 THINK          = True               # whether to use streaming response for better performance on large outputs
 MAX_CONCURRENT = 4                   # number of parallel requests
 OLLAMA_HOST    = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434") # revert to default ollama host if env var not set
-MAX_OUT_TOKEN = 4096*4                        # max output tokens for the LLM response (increase when Think mode is on)
+MAX_OUT_TOKEN = 4096*8                        # max output tokens for the LLM response (increase when Think mode is on)
 
 
 # === STRUCTURED OUTPUT SCHEMA ===
@@ -206,6 +206,9 @@ def process_file(txt_path, base_prompt):
 def main():
     with open(PROMPT_FILE, "r", encoding="utf-8") as f:
         base_prompt = f.read().strip()
+
+    # Create output directory if it doesn't exist
+    os.makedirs(os.path.dirname(OUTPUT_CSV), exist_ok=True)
 
     txt_files = sorted(glob.glob(os.path.join(INPUT_DIR, "*.txt")))
     print(f"🔍 Found {len(txt_files)} text files. Model: {OLLAMA_MODEL!r} | host: {OLLAMA_HOST} | workers: {MAX_CONCURRENT}")
